@@ -72,10 +72,38 @@ class Account:
         self.__transaction = []
 
     def __add__(self, amount):
+        if amount <= 0:
+            return "Invalid amount"
         self.__amount += amount
+        transaction = Transaction("D",  amount, self.__amount)
+        self.add_transaction(transaction)
 
     def __sub__(self, amount):
+        if amount <= 0:
+            return "Invalid amount"
+        if amount > self.amount:
+            return "Insufficient balance"
         self.__amount -= amount
+        transaction = Transaction("W",  amount, self.__amount)
+        self.add_transaction(transaction)
+
+
+    def add_transaction(self, transaction):
+        self.__transaction.append(transaction)
+
+    def transfer(self, account, amount, target_account):
+        if account == "0000":
+            account = self
+        if amount <= 0:
+            return "Invalid amount"
+        if amount > account.amount:
+            return "Insufficient balance"
+        account.amount -= amount
+        target_account.amount += amount
+        transaction = Transaction("TW",  amount, account.amount, target_account.account_no)
+        account.add_transaction(transaction)
+        transaction = Transaction("TD",  amount, account.amount, account.account_no)
+        target_account.add_transaction(transaction)
 
     @property
     def account_no(self):
@@ -88,28 +116,13 @@ class Account:
     @property
     def amount(self):
         return self.__amount
+    @amount.setter
+    def amount(self, amount):
+        self.__amount = amount
     
     @property
     def transaction(self):
         return self.__transaction
-    
-    def add_transaction(self, transaction):
-        self.__transaction.append(transaction)
-
-    def transfer(self, account, amount, target_account):
-        if amount <= 0:
-            return "Invalid amount"
-        if amount > self.__amount:
-            return "Insufficient balance"
-        if account == "0000":
-            self.__sub__(amount)
-            target_account.__add__(amount)
-            transaction = Transaction("TW",  amount, self.__amount, target_account.account_no)
-            self.add_transaction(transaction)
-            transaction = Transaction("TD",  amount, self.__amount, self.__account_no)
-            target_account.add_transaction(transaction)
-        else:
-            return "Error"
 
 class SavingAccount(Account):
 
@@ -194,36 +207,17 @@ class ATM_machine:
         return None
 
     def deposit(self, account, amount):
-        if amount <= 0:
-            return "Invalid amount"
         account.__add__(amount)
-        transaction = Transaction("D",  amount, account.amount)
-        account.add_transaction(transaction)
-
+        
     def withdraw(self, account, amount):
-        if amount <= 0:
-            return "Invalid amount"
         if amount > self.__money:
             return "ATM has insufficient funds"
         if amount > ATM_machine.withdraw_limit:
             return "Exceeds withdrawal limit of 20,000 Baht"
-        if amount > account.amount:
-            return "Insufficient amount"
         account.__sub__(amount)
-        transaction = Transaction("W",  amount, account.amount)
-        account.add_transaction(transaction)
-
+        
     def transfer(self, account, amount, target_account):
-        if amount <= 0:
-            return "Invalid amount"
-        if amount > account.amount:
-            return "Insufficient balance"
-        account.__sub__(amount)
-        target_account.__add__(amount)
-        transaction = Transaction("TW",  amount, account.amount, target_account.account_no)
-        account.add_transaction(transaction)
-        transaction = Transaction("TD",  amount, account.amount, account.account_no)
-        target_account.add_transaction(transaction)
+        account.transfer(account, amount, target_account)
 
 class Seller:
     def __init__(self, seller_no, name):
@@ -244,17 +238,7 @@ class Seller:
                 return edc
             
     def paid(self, account, amount, target_account):
-        if amount <= 0:
-            return "Invalid amount"
-        if amount > account.amount:
-            return "Insufficient balance"
-        account.__sub__(amount)
-        target_account.__add__(amount)
-        transaction = Transaction("P",  amount, account.amount, target_account.account_no)
-        account.add_transaction(transaction)
-        transaction = Transaction("TP",  amount, account.amount, account.account_no)
-        target_account.add_transaction(transaction)
-
+        account.transfer(account, amount, target_account)
 
 class EDC_machine:
     def __init__(self,edc_no,seller):
@@ -267,19 +251,7 @@ class EDC_machine:
     
     def paid(self, card, amount, target_account):
         account = card.account
-        if amount <= 0:
-            return "Invalid amount"
-        if amount > account.amount:
-            return "Insufficient balance"
-        account.__sub__(amount)
-        target_account.__add__(amount)
-        transaction = Transaction("P",  amount, account.amount, target_account.account_no)
-        account.add_transaction(transaction)
-        transaction = Transaction("TP",  amount, account.amount, account.account_no)
-        target_account.add_transaction(transaction)
-
-
-
+        account.transfer(account, amount, target_account)
 
 ##################################################################################
 
@@ -476,6 +448,7 @@ print("Hermione account after paid : ",hermione_account.amount)
 print("")
 
 # Test case #6: Display all transactions of Hermione using a `for` loop.
+print("Test Case #6")
 hermione_account = scb.search_account_from_account_no('0987654321')
 print("Hermione's transaction log:")
 for data in hermione_account.transaction:
