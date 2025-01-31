@@ -207,14 +207,14 @@ class ATM_machine:
         return None
 
     def deposit(self, account, amount):
-        account.__add__(amount)
+        account + amount
         
     def withdraw(self, account, amount):
         if amount > self.__money:
             return "ATM has insufficient funds"
         if amount > ATM_machine.withdraw_limit:
             return "Exceeds withdrawal limit of 20,000 Baht"
-        account.__sub__(amount)
+        account - amount
         
     def transfer(self, account, amount, target_account):
         account.transfer(account, amount, target_account)
