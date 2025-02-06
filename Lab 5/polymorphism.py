@@ -47,8 +47,12 @@ class AppointmentScheduler:
     def send_notifications(self, topic, message):
         for appointment in self.appointment_list:
             if appointment.topic == topic:
-                for attendance in appointment.attn:
-                    attendance.notification(message)
+                if appointment.type == "Activity":
+                    for member in app.member_list:
+                        member.notification(message)
+                else:
+                    for attendance in appointment.attn:
+                        attendance.notification(message)
 
 class Appointment:
     def __init__(self, topic, location, date, attn, type=None):
